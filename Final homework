@@ -1,0 +1,58 @@
+# Upload the attached file and save to the variable.
+# Load via import dataset, rename variable, run tidyverse package
+
+# 1. Look at the first few rows of the variable
+head(final_homework)
+
+# 2. Which genes have a p value less than or equal to 0.05 and a change in ribosome density less than 0.5? Make a vector with the names of these genes.
+a <- filter(final_homework, padj <= 0.05, fc_RD < 0.5) 
+b <- select (a, gene)  
+gene_names <- c(b)  
+gene_names1 <- gene_names[[1]] 
+length(gene_names)
+
+# 3. Extract all the rows from the dataframe that contain the genes we selected in 2. Save it as a new dataframe and export it as a csv file named "candidats.csv".
+new_df <- final_homework %>% filter (padj<=0.05, fc_RD < 0.5)  
+write.csv(new_df, "candidats.csv")  
+
+# 4. When you look at the list of candidate genes, you see that there are a lot of those whose names start with RPL and RPS. The "ribo" column tells whether a particular candidate gene is a ribosomal protein.
+#    Determine how many ribosomal genes there are among the candidates.
+ribo <- select(new_df, ribo)  
+sum (ribo == "TRUE") 
+
+# 5. How many genes are there that are NOT candidates and that encode ribosomal proteins?
+head(final_homework)
+nk <- filter(final_homework, padj >= 0.05, fc_RD > 0.5 ) 
+a <- filter(nk,cyt_ribo == "TRUE")   #15
+b <- filter(nk, mit_ribo == "TRUE")   #49   
+
+# 6. How many candidate genes are there that do not encode ribosomal proteins?
+filter(final_homework, ribo == "FALSE")     #89
+
+# 7. How many genes are there that are NOT candidates and that do NOT encode ribosomal proteins?
+filter(nk, ribo == "FALSE")  #6125
+
+# 8. Taking into account the numbers from tasks 5 - 8. make a stack barplot showing the proportions of ribosomal genes between candidates and non-candidate genes.
+# Use the colors of your choice for the stack barplot.
+matrica <- cbind(c(65,89), c(64, 6125))  
+matrica_norm <- cbind (matrica[,1]/sum(matrica[,1]), matrica[,2]/ sum (matrica [,2])) 
+barplot(matrica_norm, names = c("candidate genes", "other genes"), col = c("turquoise","turquoise4"), main = "Ribosomal genes")
+colours() 
+
+# 9. Create a boxplot representing the numbers of the difference in ribosome density (fc_RD column), where one box would represent ribosomal genes and the other the other genes.
+# Use the colors of your choice for the boxplot.
+a <- filter(final_homework, ribo == "TRUE")  
+b <-filter(final_homework, ribo == "FALSE")   
+a1 <- a$fc_RD 
+b1 <- b$fc_RD  
+boxplot (a1, b1, names = c("ribosomal genes", "other genes"), col = c("turquoise","turquoise4" ), boxwex = 0.4, ylab = "ribosomal density")
+colours()
+
+# 10. Create a histogram representing the distribution of fc_RD numbers for ribosomal genes. Next, look at what the histogram of this data looks like if a log2 and log10 transformation is done.
+hist (final_homework$fc_RD)
+hist (log10(final_homework$fc_RD))
+hist (log2(final_homework$fc_RD))
+
+# 11. We actually have two subpopulations of ribosomal proteins. Genes encoding cytoplasmic ribosomal proteins and genes encoding mitochondrial (cyt_ribo and mit_ribo columns indicate affiliation to these groups).
+#     What is the mean of fc_RD for genes encoding cytoplasmic ribosomal proteins, and what for mitochondrial ones? What is the mean of fc_RD for all genes? What are the standard deviations for the mentioned groups?
+
