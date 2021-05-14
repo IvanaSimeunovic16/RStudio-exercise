@@ -53,6 +53,3 @@ hist (final_homework$fc_RD)
 hist (log10(final_homework$fc_RD))
 hist (log2(final_homework$fc_RD))
 
-# 11. We actually have two subpopulations of ribosomal proteins. Genes encoding cytoplasmic ribosomal proteins and genes encoding mitochondrial (cyt_ribo and mit_ribo columns indicate affiliation to these groups).
-#     What is the mean of fc_RD for genes encoding cytoplasmic ribosomal proteins, and what for mitochondrial ones? What is the mean of fc_RD for all genes? What are the standard deviations for the mentioned groups?
-
