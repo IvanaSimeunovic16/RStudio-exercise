@@ -1,0 +1,46 @@
+# 11. We actually have two subpopulations of ribosomal proteins. Genes encoding cytoplasmic ribosomal proteins and genes encoding mitochondrial (cyt_ribo and mit_ribo columns indicate affiliation to these groups).
+#     What is the mean of fc_RD for genes encoding cytoplasmic ribosomal proteins, and what for mitochondrial ones? What is the mean of fc_RD for all genes? What are the standard deviations for the mentioned groups?
+citoplasmatic <- filter(final_homework, cyt_ribo == "TRUE")
+mean (cytoplasmic$fc_RD)   #mean fc_RD for the gene encoding the cytoplasmic proteins
+sd (cytoplasmic$fc_RD)    #standard deviation for cytoplasmic
+#same as before for mitochondrial ribosomal proteins:
+mitochondrial <- filter(final_homework, mit_ribo == "TRUE")
+mean (mitochondrial$fc_RD)
+sd (mitochondrial$fc_RD) 
+
+# 12. The fc_RFP and fc_Input columns show changes in ribosome footprint and mRNA levels.
+#     Create a scatterplot where fc_RFP is on the y axis and fc_Input is on the x axis. Log transform the data before plotting.
+#     Bonus: Can you add a regression curve to this plot?
+a <- log2(final_homework$fc_RPF)
+b <- log2(final_homework$fc_Input)
+plot(a,b)
+I <- lm(a~b)
+abline(I, col="blue", lwd=2)
+
+# 13. The ORF column indicates the length of the open reading frame for a given gene. Create a boxplot showing the size of the ORF for cyt_ribo, mit_ribo, and non-ribosomal genes.
+#     Create a stripchart showing the same.
+orf_cyt_ribo <- final_homework%>% filter(cyt_ribo == "TRUE") %>% select(ORF)
+orf_cyt_ribo1 <- orf_cyt_ribo [[1]]           #This is the length of the orf for cytoplasmic ribosomal genes
+
+orf_mit_ribo <- final_homework %>% filter(mit_ribo == "TRUE")%>% select(ORF)
+orf_mit_ribo1 <- orf_mit_ribo [[1]]           #this is the length of the orf for mitochondrial ribosomal genes
+
+orf_non_ribosomal <- final_homework %>% filter(ribo == "FALSE") %>% select(ORF)
+orf_non_ribosomal1 <- orf_nisu_riboz [[1]]   #This is the length of the orf for non-ribosomal genes
+
+boxplot(orf_cyt_ribo1, orf_mit_ribo1, orf_non_ribosomal1, ylim = 0,15000, names = c("cit_ribo","mit_ribo","ne_ribo"), col = c("turquoise","violetred3","whitesmoke"  ))
+colours()
+
+stripchart(orf_cyt_ribo, method = "jitter", col = "turquoise")   
+stripchart (orf_mit_ribo, method = "jitter")   
+stripchart(orf_non_ribosomal, method == "jitter")   
+head(final_homework)
+
+# 15. Which gene from the candidate has the largest and which the smallest fc_RD? Which gene from the other genes has the largest and which the non-ribosomal the smallest fc_RD?
+candidate_min <- filter(new_df, fc_RD == min(new_df$fc_RD)) #PABPC1
+candidate_max <- filter(new_df, fc_RD == max(new_df$fc_RD))   #KPNB1
+not_candidate_min <- filter(nk, fc_RD == min(nk$fc_RD))   #PPP1R9A
+not_candidate_max <- filter(nk, fc_RD == max(nk$fc_RD))  #ZFYVE1
+
+
+
