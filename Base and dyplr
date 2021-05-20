@@ -1,0 +1,17 @@
+#Base R
+head(patients)
+patients[patients$drug == "control",]
+filter(patients, drug == "control")
+patients %>% filter(drug == "control")
+patients
+patients[patients$value1 > 1,] 
+patients[patients$value1 > 1 & patients$value2 > 1,]
+
+#Dyplr
+
+filter(patients, value1>1)
+filter(patients, value1>1, value2>1) 
+select(patients, gender, value1, value2)
+patients %>% select(gender, value1, value2)
+
+select(patients, -x1)
