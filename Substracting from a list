@@ -1,0 +1,11 @@
+# Load the fasta file Danio_rerio_pole_201 as a fish variable. What type of object is this file?
+# Vector, dataframe, list?
+# Can you subset and extract the 5th element of this object. See what the function str () does for the whole fish object,
+# and what about the 5th element.
+
+fish <- read.fasta (file.choose ())
+typeof (fish)
+page (fish) #list # gives an insight into which bp are within exons, introns ..
+
+fifth <- fish [1] [5]
+page (fifth) # gives the type of the extracted element (chr)
