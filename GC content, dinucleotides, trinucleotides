@@ -1,0 +1,10 @@
+# We have fasta file containing the RNA sequence of the N gene Sars-CoV-2 currently ravaging our planet.
+# What is the GC content of this gene? Can you show the number of dinucleotides and trinucleotides for this RNA sequence?
+# What is the length of this sequence?
+
+corona <- read.fasta(file.choose())
+corona_seq <- corona[[1]]
+GC(corona_seq)
+count(corona_seq, 2)
+count(corona_seq, 3)
+length(corona_seq)
