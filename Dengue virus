@@ -1,0 +1,14 @@
+# Take nucleotides 150-199 from the genome of the Dengue virus and present them as a continuous sequence. 
+
+dengue <- read.fasta(file.choose())
+dengue_seq <- dengue[[1]]
+dengue_seq1 <- paste(dengue_seq, sep = "", collapse = "")
+substr(dengue_seq1, 150, 199)
+
+typeof(dengue)
+typeof(dengue_seq)
+
+## another way
+
+nt <- dengue[[1]][150:199]
+concatenated_seq <- paste(nt, sep = "", collapse = "")
