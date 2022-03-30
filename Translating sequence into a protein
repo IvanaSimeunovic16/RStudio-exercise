@@ -1,0 +1,8 @@
+# Download the sequence NM_001130679.3 via the NCBI
+# Translate it into protein.
+# Determine the length of amino acids.
+
+sequence <- read.fasta (file.choose ())
+sequence_v <- sequence [[1]]
+protein <- translate (sequence_v)
+length (protein)
