@@ -1,0 +1,105 @@
+######### 1. Download the MASS package. There are various datasets in this package that can be suitable for learning and practicing.
+zivotinje <- Animals
+
+# Using this dataset, use the qplot function to create a scatter plot.
+
+qplot(data = zivotinje, x = body, y = brain, color = "blue", geom = "point")1
+
+# Increase the size of the dots relative to the default (size of your choice).
+
+qplot(data = zivotinje, x = body, y = brain, color = "blue", cex =  0.1, geom = "point")
+
+# Think about what needs to be done to make the graph better.
+
+qplot(data = log2(zivotinje), x = brain, y = body, color = "blue", cex =  0.1, geom = "point")
+
+# Add "smoother".
+
+qplot(data = log2(zivotinje), x = brain, y = body, color = "blue", cex =  0.1, geom = c("point", "smooth"))
+
+# Create the same graph via the ggplot function
+
+z <- ggplot(data = log2(zivotinje), aes(x = body, y = brain))  
+z + geom_point(aes(colour = "red", cex = 0.1)) + geom_hline(yintercept = 3, colour = "red") + 
+  theme_classic() + geom_smooth(aes(x = body, y = brain))
+  
+########### 2. See the dataset "biopsy" (also belongs to the MASS package). The dataset contains the following columns. #############
+
+#ID: sample code number (not unique).
+# V1: clump thickness.
+# V2: uniformity of cell size.
+# V3: uniformity of cell shape.
+# V4: marginal adhesion.
+# V5: single epithelial cell size.
+# V6: bare nuclei (16 values ​​are missing).
+# V7: Bland chromatin.
+# V8: normal nucleoli.
+# V9: mitoses.
+#class: "benign" or "malignant".
+
+# Using the ggplot function, create the following graphics.
+
+# stripchart showing V3 for benign and malignant tumors, but contains V5 information as dot size.
+# Optional bonus: Set colors to any shade of green (bening) and any shade of red (malignant)
+
+b <- biopsy
+str(b)
+
+bio <- ggplot(data = b, aes(x = class, y = V3, size = V5)) + scale_color_manual(values = c("#82E0AA", "#EC7063"))
+
+bio + geom_jitter(aes(colour = class),width = 0.4, height = 0.7) +
+  theme_classic() + scale_y_continuous(limits = c(0, 10)) 
+  
+# Make a violin plot for benign and malignant tumors (x axis), and on the y axis let it be V8. Let the "trim" parameter be set to FALSE.
+# Add a blue dot showing the median and a size of 6.5.
+
+bio1 <- ggplot(data = b, aes(x = class, y = V8)) 
+
+bio1 + geom_violin(trim=FALSE) +
+  stat_summary(fun=median, geom="point", size=6.5, color="blue")
+  
+#Display distributions using a density plot (as a line-only histogram) for V6 data. Use the qplot function, not ggplot.
+# The distributions for benign and malignant tumors should be on the same graph.
+# Let them have different colors, but you don't have to adjust them yourself, let them be automatic.
+
+qplot(data = b, x = V6,  geom = "density", color = class)
+
+# Next, share the graph using facets.
+
+qplot(data = b, x = V6, geom = "density", color = class, facets = ~class) 
+
+# Show the V5 distribution using histograms for benign and malignant tumors. Use the ggplot function.
+# Choose a dark theme.
+
+bio2 <- ggplot(data = b, aes(x = V5, fill = class))
+bio2 + geom_histogram(binwidth = 1.5) + theme_dark()
+
+# Make histograms that are filled (completely painted) in blue and yellow (any shade)
+
+bio4 <- ggplot(b, aes(x=V5, fill=class)) + 
+  geom_histogram(binwidth = 1.5)+ theme_dark() +scale_fill_manual(values=c("#0DAB9F", "#FEF01F"))
+
+bio4
+
+# See what happens when you set the color to class in aes within the ggplot function, when after that, set the fill parameter within the geom_histogram function to "gray".
+
+bio5 <- ggplot(b, aes(x=V5, color=class)) + geom_histogram(fill = "grey",binwidth = 1.5)+ theme_dark() 
+bio5 #the edges are colored, but interior is grey
+
+############ Using the ggpubr package, create the following graphics. ##############
+
+# Dataset biopsy.
+# Boxplot for malignant and benign tumors, and colors according to the "Simpsons" palette.
+# Set titles for the x, y axis as well as for the graphic.
+
+ggboxplot(b, x = "class", y = "V1",
+          title = "Klase tumora i velicine epitelnih celija", ylab = "Velicina celija",
+          color = "class", palette = "simpsons")
+          
+# Create a barplot with error bars
+# covered by individual measurements, which shows the same V1 values.
+# Paint the bars light blue and red.
+
+ggbarplot(b, x = "class", y = "V1", ylab = "Velicina epitelnih celija", 
+          add = c("mean_sd", "jitter"),
+          color = "class", palette = c("#D6EAF8", "#F1948A")) 
