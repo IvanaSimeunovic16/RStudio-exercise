@@ -1,0 +1,237 @@
+### SNORD115
+
+pet_grupa=Tabela.sa.enzimima.za.R
+pet_grupa
+str(pet_grupa)
+pet_grupa$group=as.factor(pet_grupa$group)
+pet_grupa$strain=as.factor(pet_grupa$strain)
+pet_grupa$environment=as.factor(pet_grupa$environment)
+str(pet_grupa)
+
+
+pet_grupa_bezNA <- na.omit(pet_grupa, na.action = "omit", fill = NULL) 
+
+#visual detection of outliers
+
+library(ggplot2)
+boxplot(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"], ylab = "SNORD115")  #no outliers
+boxplot(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"], ylab = "SNORD115") # 1 outlier
+boxplot(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"], ylab = "SNORD115") #no outliers
+boxplot(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"], ylab = "SNORD115") # 1 outlier
+boxplot(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"], ylab = "SNORD115") # no outliers
+
+#determining the value of outliers
+
+boxplot.stats(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"])$out #0
+boxplot.stats(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])$out #0.2774197
+boxplot.stats(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"])$out #0
+boxplot.stats(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])$out #0.2731106
+boxplot.stats(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"])$out #0
+
+#determining the position of outliers in the data
+
+out2=boxplot.stats(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])$out
+out2_ind <- which(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"] %in% c(out2))
+out2_ind  #4 
+out4=boxplot.stats(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])$out
+out4_ind <- which(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"] %in% c(out4))
+out4_ind #8 
+
+#Dixon's statistical test (best fit to sample size), both for max and min values
+
+library("outliers")
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"])
+test   ## no min outliers
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"],opposite = TRUE)
+test  #no max outliers
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])
+test  #no min outliers
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"],opposite = TRUE)
+test #does not show an outlier, although we have observed it here with a boxplot
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"])
+test  
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"],opposite = TRUE)
+test  
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"])
+test 
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"],opposite = TRUE)
+test 
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])
+test  
+test <- dixon.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"],opposite = TRUE)
+test  #here shows the outlier that was observed on the boxplot
+
+
+# Dixon test shows that actually only one of the observed outliers is really an outlier
+# in the C57BL/6_SC group, I change that outlier to the maximum valuer
+
+pet_grupa_bezNA[31, "SNORD115"] <- NA 
+pet_grupa_bezNA                      # 0.27311055 outlier replaced by NA
+pet_grupa_bezNA[31, "SNORD115"] <- max(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"], na.rm=TRUE)
+pet_grupa_bezNA
+
+#Next, I perform all statistical tests on the table that now contains the corrected outlier
+
+#Checking the normality of the distribution
+
+#First group
+shapiro.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"]) 
+#Second group
+shapiro.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])	
+#Third group
+shapiro.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"])	
+#Fourth group
+shapiro.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])	
+#Fifth group
+shapiro.test(pet_grupa_bezNA$SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"]) 
+
+#I select 3 groups of BALB mice and check the homogeneity of the variance
+
+tri_grupe <- pet_grupa_bezNA[!pet_grupa_bezNA$strain=='C57BL/6', ]
+tri_grupe		# we only have BALB/C in all three environments
+str(tri_grupe)
+
+library(car)
+leveneTest(SNORD115 ~ group, data = tri_grupe, center=mean) #variance is not homogeneous (0.04544)
+
+#Because in these 3 groups there is a normal distribution, but the variance is not homogeneous,
+#I use a non-parametric analogue of one way Anova, which is Welch oneway.test
+
+oneway.test(SNORD115 ~ group, data = tri_grupe) #null hypothesis is not rejected
+
+#we would have done this post hoc test if we had some statistical differences
+
+library(rstatix)
+games_howell_test(tri_grupe, SNORD115~group, conf.level = 0.95, detailed = FALSE)
+
+
+## I single out 4 groups, of which C57BL/6_SC does not have a normal distribution
+
+cetiri_grupe <- pet_grupa_bezNA[!pet_grupa_bezNA$group=='BALB/c_EEnoi', ]
+cetiri_grupe
+str(cetiri_grupe)
+leveneTest(cetiri_grupe$SNORD115, cetiri_grupe$group, center=mean)
+
+#variance for 4 groups is homogeneous, but due to the distribution we use a non-parametric test
+# ARTool
+#saving 4 groups in a csv file
+#at the beginning of the script, NA values from five groups were deleted, from which four groups were further filtered (item 16)
+
+write.csv(cetiri_grupe,"C:/Users/lenovo/Desktop/R2022/Skripte iz predavanja/TabeladfbezNA2.csv", row.names = FALSE)
+df <- read.csv("TabeladfbezNA2.csv")
+str(df)
+df$group=as.factor(df$group)
+df$strain=as.factor(df$strain)
+df$environment=as.factor(df$environment)
+str(df)
+m = art(SNORD115 ~ strain * environment + (1|group), data=df)
+anova(m)
+#p values are greater than 0.05, so there is no significant difference
+
+#If we want a t test for 4 groups, we use the analog Wilcoxon t test because not all groups have it
+#normal distribution (For C57Bl/6)
+
+t.test(cetiri_grupe$SNORD115[cetiri_grupe$strain=="BALB/c"]~cetiri_grupe$environment[cetiri_grupe$strain=="BALB/c"])
+wilcox.test(cetiri_grupe$SNORD115[cetiri_grupe$strain=="C57BL/6"]~cetiri_grupe$environment[cetiri_grupe$strain=="C57BL/6"])
+#In both cases p values are greater than 0.05, so the null hypothesis is not rejected (there are no statistically significant differences)
+
+###log_SNORD115
+
+boxplot(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"], ylab = "log_SNORD115")  #no outliers
+boxplot(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"], ylab = "log_SNORD115") # 1 outlier
+boxplot(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"], ylab = "log_SNORD115") #no outliers
+boxplot(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"], ylab = "log_SNORD115") # 1 outlier
+boxplot(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"], ylab = "log_SNORD115") # no outliers
+#And here we have 2 outliers in the same groups as in the previous case without logarithmic values
+
+#Vrednosti outliera su:
+boxplot.stats(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"])$out #0
+boxplot.stats(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])$out #0.1063336
+boxplot.stats(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"])$out #0
+boxplot.stats(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])$out # 0.1048661
+boxplot.stats(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"])$out #0
+
+#we want to detect where exactly the outliers are located, in which ordinal place within the group in which they were detected
+#and these are BALB/c_EE and C57BL/6_SC
+
+out2=boxplot.stats(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])$out
+out2_ind <- which(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"] %in% c(out2))
+out2_ind  #4 
+out4=boxplot.stats(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])$out
+out4_ind <- which(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"] %in% c(out4))
+out4_ind #8 
+
+#Dixon's statistical test - I work now only for groups in which I noticed the existence of potential outliers
+
+test <- dixon.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])
+test  
+test <- dixon.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"],opposite = TRUE)
+test  #outlier detected
+test <- dixon.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])
+test  
+test <- dixon.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"],opposite = TRUE)
+test #doesn't show the outlier, although we spotted it here with the boxplot
+
+#And these results are the same as in the previous case
+#Dixon's test shows that in "C57BL/6_SC" there is an outlier (max), which we also noticed on the boxplot,
+#but it doesn't show that in "BALB/c_EE" there is an outlier that we observed with the boxplot
+#That's why I will only correct outliers that were confirmed by Dixon's test in "C57BL/6_SC"
+
+pet_grupa_bezNA[31, "log_SNORD115"] <- NA #8 
+pet_grupa_bezNA                     
+pet_grupa_bezNA[31, "log_SNORD115"] <- max(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"], na.rm=TRUE)
+pet_grupa_bezNA
+
+#Next, the statistical tests are again performed on the table, which now has the outlier corrected value
+
+#Distribution check
+
+#First group
+shapiro.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_EE"]) #normalna raspodela
+#Second group
+shapiro.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EE"])	#normalna raspodela
+#Third group
+shapiro.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_EEnoi"])	#normalna raspodela
+#Fourth group
+shapiro.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="C57BL/6_SC"])	#nije normalna
+#Fifth group
+shapiro.test(pet_grupa_bezNA$log_SNORD115[pet_grupa_bezNA$group=="BALB/c_SC"]) #normalna raspodela
+
+#I select 3 groups of BALB mice and check the homogeneity of the variance
+
+tri_grupe <- pet_grupa_bezNA[!pet_grupa_bezNA$strain=='C57BL/6', ]
+tri_grupe		# we only have BALB/C in all three environments
+str(tri_grupe)
+
+leveneTest(log_SNORD115 ~ group, data = tri_grupe, center=mean)#variance is homogeneous
+
+#Since I have both a normal distribution and homogeneity of variance, I use one way Anovalibrary(dplyr)
+
+group_by(tri_grupe, group) %>%
+  summarise(
+    count = n(),
+    mean = mean(log_SNORD115, na.rm = TRUE),
+    sd = sd(log_SNORD115, na.rm = TRUE)
+  )
+
+res.aov <- aov(log_SNORD115 ~ group, data = tri_grupe)
+summary(res.aov) #  0.148, there are no statistically significant differences between the tested groups
+
+## I single out 4 groups, of which C57BL/6_SC does not have a normal distribution
+
+cetiri_grupe <- pet_grupa_bezNA[!pet_grupa_bezNA$group=='BALB/c_EEnoi', ]
+cetiri_grupe
+str(cetiri_grupe)
+leveneTest(cetiri_grupe$log_SNORD115, cetiri_grupe$group, center=mean) 
+
+#Although there is homogeneity of variance, one of the groups does not have a normal distribution and therefore ARTool is used again
+
+write.csv(cetiri_grupe,"C:/Users/lenovo/Desktop/R2022/Skripte iz predavanja/TabeladfbezNA3.csv", row.names = FALSE)
+df <- read.csv("TabeladfbezNA3.csv")
+str(df)
+df$group=as.factor(df$group)
+df$strain=as.factor(df$strain)
+df$environment=as.factor(df$environment)
+str(df)
+m = art(log_SNORD115 ~ strain * environment + (1|group), data=df)
+anova(m)
