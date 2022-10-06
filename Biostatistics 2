@@ -1,0 +1,113 @@
+# Load the file plant_growth. Data represent the growth of plants (cm), grown in water with added sugars.
+
+pg <- plant_growth
+pg <- pg[-1]
+pg1 <- stack(pg)
+names(pg1)[1] <- "Height"
+names(pg1)[2] <- "Groups" #arrange the table so that it has a long format
+str(pg1)
+
+# Analyze the loaded data and justify the method you have chosen for statistical analysis.
+
+#### The table contains information about the growth of plants when they are grown with:
+  # 1. only with glucose
+  # 2. fructose only
+  # 3. glucose and fructose
+  # 4. glucose and sucrose
+  # 5. without supplements, it is a control group
+
+#We want to check whether there are statistically significant differences in the growth of plants in the specified conditions
+#Since we have one group of plants, where we monitor the effects of different sugars, we can use one way Anova
+#We could use a t test to compare each group with the control and with each other, but Anova does it all in one step
+
+#Before that, you should check the distribution, variance and outliers
+#The table does not contain NA values
+
+#visual outlier detection
+
+library(ggplot2)
+boxplot(pg1$Height[pg1$Groups=="Control"], xlab = "Control", ylab = "Height")
+boxplot(pg1$Height[pg1$Groups=="Glucose"], xlab = "Glucose", ylab = "Height")
+boxplot(pg1$Height[pg1$Groups=="Glucose...Fructose"], xlab = "Glucose...Fructose", ylab = "Height")
+boxplot(pg1$Height[pg1$Groups=="Glucose...Saccharose"], xlab = "Glucose...Saccharose", ylab = "Height")
+boxplot(pg1$Height[pg1$Groups=="Fructose"], xlab = "Fructose", ylab = "Height")
+
+#No outliers were observed visually
+#I also run a statistical test to check it further
+
+library("outliers")
+test <- dixon.test(pg1$Height[pg1$Groups=="Control"]) #for max
+test <- dixon.test(pg1$Height[pg1$Groups=="Control"],opposite = TRUE) #for min
+
+test <- dixon.test(pg1$Height[pg1$Groups=="Glucose"])
+test <- dixon.test(pg1$Height[pg1$Groups=="Glucose"],opposite = TRUE) #p-value = 0.0125
+                                                                     #alternative hypothesis: lowest value 57 is an outlier
+
+
+test <- dixon.test(pg1$Height[pg1$Groups=="Glucose...Fructose"]) #p-value = 0.0125
+                                          #alternative hypothesis: highest value 61 is an outlier
+                                          # here the test still shows an outlier, max
+
+test <- dixon.test(pg1$Height[pg1$Groups=="Glucose...Fructose"],opposite = TRUE) #p-value = 0.0125
+                                                          #alternative hypothesis: lowest value 56 is an outlier
+
+test <- dixon.test(pg1$Height[pg1$Groups=="Glucose...Saccharose"])
+test <- dixon.test(pg1$Height[pg1$Groups=="Glucose...Saccharose"], opposite = TRUE)
+
+test <- dixon.test(pg1$Height[pg1$Groups=="Fructose"])
+test <- dixon.test(pg1$Height[pg1$Groups=="Fructose"], opposite = TRUE) #p-value = 0.0125
+                                                                       #alternative hypothesis: lowest value 62 is an outlier
+                                                                    
+#I'm not sure that they should be replaced, because the value does not differ much from the other values in that group
+#That is, if the test detected a min outlier with a value of 57, and the maximum value in that group is 61, I assume that it is not an outlier after all
+#It's the same with other outliers that the test detects, if I look at the table,
+#I wouldn't say that it's really data that bounces so I wouldn't change it (and it's in agreement with the boxplot)
+
+#First I check the distribution and homogeneity of variance in order to choose a parametric or non-parametric test                                                  
+
+shapiro.test(pg1$Height[pg1$Groups=="Control"]) #p-value = 0.732
+shapiro.test(pg1$Height[pg1$Groups=="Glucose"]) #p-value = 0.6272
+shapiro.test(pg1$Height[pg1$Groups=="Glucose...Fructose"]) #p-value = 0.1375
+shapiro.test(pg1$Height[pg1$Groups=="Glucose...Saccharose"]) #p-value = 0.3906
+shapiro.test(pg1$Height[pg1$Groups=="Fructose"]) #p-value = 0.2463
+
+#The distribution in each group is normal
+
+library (car)
+leveneTest(Height ~ Group, data = pg1, center=mean) #variance is homogeneous (0.598)
+
+# Accordingly, we can do a parametric test
+res.aov <- aov(Height ~ Group, data = pg1)
+summary(res.aov) #We see that there are statistically significant differences between the groups, but we don't know which ones
+
+#post hoc test
+
+TukeyHSD(res.aov)
+
+
+# diff lwr opr p adj
+#Glucose-Control -10.8 -13.100619 -8.499381 0.0000000
+#Glucose...Fructose-Control -11.9 -14.200619 -9.599381 0.0000000
+#Glucose...Saccharose-Control -12.1 -14.400619 -9.799381 0.0000000
+#Fructose-Control -6.0 -8.300619 -3.699381 0.0000000
+#Glucose...Fructose-Glucose -1.1 -3.400619 1.200619 0.6566454
+#Glucose...Saccharose-Glucose -1.3 -3.600619 1.000619 0.5017022
+#Fructose-Glucose 4.8 2.499381 7.100619 0.0000039
+#Glucose...Saccharose-Glucose...Fructose -0.2 -2.500619 2.100619 0.9991458
+#Fructose-Glucose...Fructose 5.9 3.599381 8.200619 0.0000000
+
+
+# Present data graphically and informatively. Write a comment about why you decided on such a graphic display.
+
+#I decided on a boxplot, because I can present error bars and individual measurements on it, it seems to me to be the most informative
+
+
+dev.new(width=5,height=4,noRStudioGD = TRUE) 
+
+ggboxplot(pg1, x = "Groups", y = "Height",
+          title = "Plant growth in relation to sugar treatment", ylab = "Plant height (cm)",
+          color = "Groups", palette = "simpsons",
+          add = c("mean_sd", "jitter"))
+          
+dev.off()
+
