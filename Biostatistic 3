@@ -1,0 +1,250 @@
+# Load the cell_line file. The table shows different morphological characteristics of three cell lines (CaCo-2, Huh7, MCF7).
+# Graphically, using a boxplot overlaid with a stripchart, display the measurements of the sail diameter at all three cell lines.
+
+cl <- cell_lines_exam
+str(cl)
+
+ggboxplot(cl, x = "cell_line", y = "nucleus_diameter.um",
+          title = "Sail diameter measurements", ylab = "Sail diameter",
+          color = "cell_line", palette = "simpsons",
+          add = "jitter")
+
+
+# Using a histogram or density plot (personal choice), present the core diameter measurements for each cell line.
+# At each cell line, change the color of the graphic.
+
+# You can have separate graphs for each line (individual graphs or three graphs on the same facet), or all distributions on one (overlaid histograms/density). The choice is yours.
+# Help: If you have a problem with creating a histogram or density plot after subsetting, we advise you to create a new one after subsetting using the data.frame() function from the subsetted data.
+
+a <- ggplot(data = cl, aes(x = core_diameter.um, fill = cell_line))
+
+a + geom_histogram() + facet_grid(cell_line ~ .) + ggtitle("Sail diameter measurements") +
+  scale_fill_manual(name = "Cell Line",
+                     guide = "legend",
+                     values ​​= c("#EC7063","#F4D03F","#82E0AA")) #horizontal facets
+
+a + geom_histogram(binwidth = 0.5) + facet_grid(. ~ cell_line) + ggtitle("Sail diameter measurements") +
+  scale_fill_manual(name = "Cell Line",
+                    guide = "legend",
+                    values ​​= c("#EC7063","#F4D03F","#82E0AA")) #vertical facets
+
+
+#### I also created a density plot with facets, the colors are automatic:
+
+qplot(data = cl, x = cell_line,
+      geom = "density", color = cell_line, facets = ~cell_line)
+      
+# To which cell line does the cell with the smallest measured diameter of the sail belong, and to which one with the largest diameter of the sail?
+
+which.max(cl$diametar_jedra.um) #I find the ordinal number of measurements with the max value (the same for min)
+cl[16,] #MCF7 ##I extract the 16th measurement where I detected the max value and it is the MCF7 line
+
+which.min(cl$diametar_jedra.um)
+cl[61,] #Huh7
+
+# Is there a statistically significant difference between the groups for sail size?
+
+
+#One way anova, because I have 3 different cell lines (3 groups) that I want to compare with each other, and I monitor one parameter, which is the diameter of the sail (I don't want to examine some parameter interactions, for example)
+
+#outlier check:
+boxplot(cl$sail_diameter.um[cl$cell_line=="MCF7"], ylab = "Sail diameter") #outlier min
+boxplot(cl$sail_diameter.um[cl$cell_line=="Huh7"], ylab = "Sail diameter") #none
+boxplot(cl$sail_diameter.um[cl$cell_line=="CaCo-2"], ylab = "Sail diameter") #1 min, 1 max
+
+#determining the outlier value
+
+boxplot.stats(cl$sail_diameter.um[cl$cell_line=="MCF7"])$out #12.3
+boxplot.stats(cl$sail_diameter.um[cl$cell_line=="Huh7"])$out #0
+boxplot.stats(cl$diameter_jedra.um[cl$cell_line=="CaCo-2"])$out # 13.8, 12.2, 13.8
+                                                                       # here shows 3 values, two are the same
+
+
+#determining the position of outliers in the data
+out2=boxplot.stats(cl$sail_diameter.um[cl$cell_line=="MCF7"])$out
+out2_ind<- which(cl$sail_diameter.um[cl$cell_line=="MCF7"] %in% c(out2))
+out2_ind #42 (in that group, not in the whole table)
+
+out2=boxplot.stats(cl$sail_diameter.um[cl$cell_line=="Huh7"])$out
+out2_ind <- which(cl$sail_diameter.um[cl$cell_line=="Huh7"] %in% c(out2))
+out2_ind #there are certainly no outliers
+
+out2=boxplot.stats(cl$diameter_jedra.um[cl$cell_line=="CaCo-2"])$out
+out2_ind <- which(cl$diametar_jedra.um[cl$cell_line=="CaCo-2"] %in% c(out2))
+out2_ind #18, 20 and 32 (118,120 and 132 in the whole table)
+
+#Rosner's test due to sample size
+
+library(EnvStats)
+
+test <- rosnerTest(cl$dijametar_jedra.um[cl$cellijska_linija=="MCF7"], k = 1) #according to this test the outlier at the 42nd position (values ​​12.3) is not actually an outlier
+test <- rosnerTest(cl$diametar_jedra.um[cl$celijska_linija=="CaCo-2"], k = 3) #according to this test, the observed outliers are also not outliers
+
+
+# check distribution and variance
+library (car)
+
+leveneTest(core_diameter.um ~ cell_line, data = cl, center=mean) # p > 0.05, there is homogeneity
+
+mcf <- cl[cl$cell_line == "MCF7",]
+shapiro.test(mcf$diametar_jedra.um) #normal distribution p>0.05
+
+huh <- cl[cl$cell_line == "Huh7",]
+shapiro.test(huh$diametar_jedra.um) #normal distribution
+
+caco <- cl[cl$cell_line== "CaCo-2",]
+shapiro.test(caco$diametar_jedra.um) #normal distribution
+
+res.aov <- aov(sail_diameter.um ~ cell_line, data = cl)
+summary(res.aov)
+
+TukeyHSD(res.aov) #there is a statistically significant difference between all three groups of cells, because they are
+                  # all p values ​​(of all groups) less than 0.05
+
+# Which cell line has the longest average division time? Is the difference statistically significant?
+# Justify the statistical analysis you are applying.
+
+mean(mcf$time_divisions.h) #22.746
+mean(huh$vreme_deobe.h) # 23.826
+mean(caco$partition_time.h) #24.526 ##the longest average parting time is in this group
+
+#Since ANOVA tests the group mean, I would apply it again
+
+#Checking outliers
+
+boxplot(cl$split_time.h[cl$cell_line=="MCF7"], ylab = "Split Time") #2 outliers
+boxplot(cl$split_time.h[cl$cell_line=="Huh7"], ylab = "Split Time") #none
+boxplot(cl$division_time.h[cl$cell_line=="CaCo-2"], ylab = "Division Time") #none
+
+#determining the outlier value
+
+boxplot.stats(cl$time_division.h[cl$cell_line=="MCF7"])$out #23.0, 23.1
+
+#determining the position of outliers in the data
+out2=boxplot.stats(cl$time_division.h[cl$cell_line=="MCF7"])$out
+out2_ind<- which(cl$time_division.h[cl$cell_line=="MCF7"] %in% c(out2))
+out2_ind #24, 44
+
+#Rosner's test due to sample size
+
+test <- rosnerTest(cl$vreme_deobe.h[cl$cell_line=="MCF7"], k = 2) #for outlier values ​​23.1 shows that the outlier,
+                                                                        # for the value 23.0 does not indicate that it is an outlier
+
+#Correction of outliers
+#I will change the outlier that exists on the boxplot and for which the test confirmed (values ​​23.1)
+
+cl[44, "partition_time.h"] <- NA
+cl # 0.27311055 outlier replaced by NA
+cl[44, "split_time.h"] <- max(cl$split_time.h[cl$cell_line=="MCF7"], na.rm=TRUE)
+cl
+
+#Next, the analysis is done on the table, which now contains changes in the sense that the outlier is replaced by the maximum of that group
+#Checking distribution and variance
+mcf_division <- mcf$time_division.h
+huh_deoba <- huh$time_deoba.h
+caco_deoba <- caco$time_deobe.h
+
+shapiro.test(mcf_deoba) # not normal
+shapiro.test(huh_deoba) # not normal
+shapiro.test(caco_partition) #normal
+
+leveneTest(vreme_deobe.h ~ cell_line, data = cl, center=mean) #1.102e-08, not homogeneous
+
+#I do non-parametric tests because neither the conditions of normality of distribution nor homogeneity of variance are met
+#I will do it too
+
+###Welch ANOVA (when variance is not satisfied)
+oneway.test(time_division.h ~ cell_line, data = cl) #p-value < 2.2e-16
+
+#Games-Howell post hoc test for Welch anova
+library(rstatix)
+games_howell_test(cl, vreme_obe.h~cell_line, conf.level = 0.95, detailed = FALSE) #there are differences in all three groups
+
+###Kruscal-Wallis - ANOVA test when the distribution is not normal
+
+kruskal.test(time_division.h ~ cell_line, data = cl)
+
+###Dunn-Bonferroni test (Kruscal-Wallis post hoc test)
+
+library(dunn.test)
+dunn.test (cl$time_division.h, g=cl$cell_line, method=c("bonferroni"), kw=TRUE, label=TRUE,wrap=FALSE, table=TRUE, list=FALSE, rmc=FALSE, alpha =0.05, altp=FALSE)
+
+###Both tests show that there are statistically significant differences between all three groups
+
+
+# Create a barplot showing the mean values ​​for the cell area. Each bar should have its own color, which indicates a different cell line.
+# Add error bars showing the standard deviation.
+# Add a barplot legend.
+
+par(mar=c(5, 4, 4, 8), xpd=TRUE) #more space on the right to fit the legend
+
+m <- barplot(c(mean(caco$cell_surface.um.2), mean(huh$cell_surface.um.2), mean(huh$cell_surface.um.2)),
+             col = c("#EC7063","#F4D03F","#82E0AA"),
+             ylim = c(0.4000),
+             names.arg=c("Caco","Huh7","MCF"),
+             main = "Mean cell area",
+             ylab = "Cell Area",
+             xlab = "Cell Lines",
+             legend.text = c("CaCo-2", "Huh7", "MCF"),
+             args.legend = list(x = "topright", inset=c(-0.6, 0)))
+
+arrows(m, c(mean(caco$surface_cells.um.2), mean(huh$surface_cells.um.2), mean(mcf$surface_cells.um.2)) - c(sd(caco$surface_cells.um. 2), sd(huh$surface_cells.um.2), sd(mcf$surface_cells.um.2)), #draw the error
+       m, c(mean(caco$surface_cells.um.2), mean(huh$surface_cells.um.2), mean(mcf$surface_cells.um.2)) + c(sd(caco$surface_cells.um.2) , sd(huh$surface_cells.um.2), sd(mcf$surface_cells.um.2)),
+       angle = 90,
+       code = 3,
+       length = 0.05,
+       lwd = 1,
+       xpd =T)
+
+dev.off()
+
+#####or much simpler
+
+ggbarplot(cl, x = "cell_line", y = "cell_area.um.2", ylab = "Mean",
+          add = "mean_sd",
+          fill = "cell_line", palette = c("#EC7063","#F4D03F","#82E0AA"),
+          legend = "right", legend.title = "Cell Line",
+          title = "Mean value of cell surface in different cell lines")
+          
+#### What is the correlation between the surface of the cell and the diameter of the sail? Does this number indicate that the given parameters are well or poorly correlated?
+#### It should not be separated into cell lines, but for everything together (entire columns).
+
+fit <- lm(cell_area.um.2 ~ core_diameter.um, data = cl)
+summary(fit)
+coefs1 <- coef(fit)
+
+summary(fit)$coefficients
+
+#followed by checking the normality of the data, outliers and whether the data should be transformed
+qqnorm(cl$surface_of_cells.um.2)
+qqline(cl$surface_of_cells.um.2)
+hist(cl$cell surface.um.2, main = "Cell surface")
+hist(log(cl$cell_area.um.2), main = "Cell area") #doesn't seem like a normal distribution anyway
+
+qqnorm(cl$diametar_jedra.um)
+qqline(cl$diametar_jedra.um)
+hist(cl$diameter_jedra.um, main = "Diameter of the sail") #predominantly normal distribution
+
+#I do the Shapiro test to check the distribution
+shapiro.test(cl$surface_of_cells.um.2) #not normal
+shapiro.test(cl$diametar_jedra.um) #normal distribution
+
+#Correlation
+cor(cl$surface_cells.um.2, cl$core_diameter.um ) #-0.1162487, negative correlation
+
+#I'm doing Spearman's test because I don't have the condition of normality of data distribution satisfied
+
+cor.test(cl$surface_of_cells.um.2, cl$diameter_of_jedra.um, method="spearman") #p-value = 0.04137
+                                                                            #correlation is significant
+
+
+# Use a scatter plot to present the measurements.
+# Add a purple (any shade) horizontal dashed line, thickness 3, representing the median of the cell area measurements.
+median(cl$surface_of_cells.um.2) # 3113.64 median
+       
+z <- ggplot(data = cl, aes(x = nucleus_diameter.um , y = cell_surface.um.2, color = cell_line)) #base
+
+z + geom_point() + geom_hline(yintercept = 3113.64 , color = "#E6ADF2", linetype = "twodash", size = 3) +
+  theme_minimal() + ggtitle("The ratio of the diameter of the sail to the area of the cell") + scale_color_manual(name = "Cell line",
+                                                                                           guide = "legend",
+                                                                                           values = c("#EC7063","#F4D03F","#82E0AA"))
